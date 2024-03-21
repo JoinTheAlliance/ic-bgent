@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import * as express from 'express';
 import initSqlJs from 'sql.js/dist/sql-asm.js';
 import form from './form'
+import cors from 'cors'; // Import the cors package
 
 const key = "f35f293df258e07d7b75c7e9b613a314:d19b2510af1298856d3058dd68f7866be9e913500f9b7ea3e65072f0d2a85f0dc15077eea898a60ae26f2ba5e7dc368fdec5d2e53757d5a9b6abda9cd7217cfd";
 // Decryption function
@@ -122,6 +123,7 @@ async function handleMessage(
 }
 export const setupServer = async (port: number = 80) => {
   const app = express();
+  app.use(cors()); // Enable CORS for all routes
   const SQL = await initSqlJs({});
   const db = new SQL.Database();
   const adapter = new SqlJsDatabaseAdapter(db as any);
