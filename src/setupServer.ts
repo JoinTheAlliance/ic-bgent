@@ -1,25 +1,10 @@
 import { BgentRuntime, Content, Message, SqlJsDatabaseAdapter, State, composeContext, embeddingZeroVector, messageHandlerTemplate, parseJSONObjectFromText, zeroUuid, zeroUuidPlus1 } from 'bgent';
-// import * as crypto from 'crypto';
 import express from 'express';
 import initSqlJs from 'sql.js/dist/sql-asm.js';
-import form from './form'
+import form from './form';
 
-const key = "f35f293df258e07d7b75c7e9b613a314:d19b2510af1298856d3058dd68f7866be9e913500f9b7ea3e65072f0d2a85f0dc15077eea898a60ae26f2ba5e7dc368fdec5d2e53757d5a9b6abda9cd7217cfd";
-// Decryption function
-// function decrypt(text: string, secretKey: crypto.BinaryLike) {
-//   const textParts = text.split(':');
-//   if (!textParts) {
-//     throw new Error('Invalid text');
-//   }
-//   // @ts-expect-error - idk prolly bad
-//   const iv = Buffer.from(textParts.shift(), 'hex');
-//   const encryptedText = textParts.join(':');
-//   const key = crypto.scryptSync(secretKey, 'salt', 32);
-//   const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-//   let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-//   decrypted += decipher.final('utf8');
-//   return decrypted;
-// }
+const key = "r9ynLtE17NMA1Ok43rpT3BlbkFJ8479vQYcAh3Z6J0SXkNu";
+
 /**
  * Handle an incoming message, processing it and returning a response.
  * @param message The message to handle.
@@ -35,21 +20,27 @@ async function handleMessage(
   const _saveRequestMessage = async (message: Message, state: State) => {
     const { content, userId, room_id } = message;
     if (content) {
-      await runtime.messageManager.createMemory({
+      console.log("Create memory")
+      await runtime.databaseAdapter.createMemory({
         user_id: userId!,
         content,
         room_id,
         embedding: embeddingZeroVector,
-      });
+      }, "messages", false);
+      console.log('evaluating')
       await runtime.evaluate(message, state);
     }
   };
 
+  console.log('saving request message')
   await _saveRequestMessage(message, state as State);
+  console.log('getting state', state);
+
   if (!state) {
     state = (await runtime.composeState(message)) as State;
   }
 
+  console.log('composing context');
   const context = composeContext({
     state,
     template: messageHandlerTemplate,
@@ -59,10 +50,12 @@ async function handleMessage(
   const { userId, room_id } = message;
 
   for (let triesLeft = 3; triesLeft > 0; triesLeft--) {
+    console.log('running completion')
     const response = await runtime.completion({
       context,
       stop: [],
     });
+    console.log('response', response);
 
     runtime.databaseAdapter.log({
       body: { message, context, response },
@@ -71,6 +64,7 @@ async function handleMessage(
       type: "simple_agent_main_completion",
     });
 
+    console.log('parsing response')
     const parsedResponse = parseJSONObjectFromText(
       response
     ) as unknown as Content;
@@ -103,12 +97,12 @@ async function handleMessage(
     responseContent.content = responseContent.content?.trim();
 
     if (responseContent.content) {
-      await runtime.messageManager.createMemory({
+      await runtime.databaseAdapter.createMemory({
         user_id: runtime.agentId,
         content: responseContent,
         room_id,
         embedding: embeddingZeroVector,
-      });
+      }, "messages", false);
       await runtime.evaluate(message, { ...state, responseContent });
     } else {
       console.warn("Empty response, skipping");
@@ -120,17 +114,29 @@ async function handleMessage(
 
   return responseContent;
 }
-export const setupServer = async (port: number | undefined = undefined) => {
+
+
+
+export const setupServer = async (fetch: unknown | typeof globalThis.fetch, port: number | undefined = undefined) => {
+  console.log("Init express")
   const app = express();
+  console.log("Init sql.js")
   const SQL = await initSqlJs({});
+  console.log("Creating database adapter")
   const db = new SQL.Database();
   const adapter = new SqlJsDatabaseAdapter(db as any);
+console.log("Define decrypt")
+  // Decryption function
+
+console.log("Init runtime")
   const runtime = new BgentRuntime({
+    fetch: fetch,
     serverUrl: "https://api.openai.com/v1",
     databaseAdapter: adapter,
-    token: key // decrypt(key, 'secret'),
+    token: 'sk-T' + key,
   });
 
+  console.log("Creating account")
   // if account doesn't exist with zeroUuidPlus1, create it
   let accountExists = false;
   let zeroUuidPlus1Account = null;
@@ -150,12 +156,15 @@ export const setupServer = async (port: number | undefined = undefined) => {
       email: "testaccount2@test.com"
     });
   }
+  console.log("Account created")
 
   app.get('/', async (req, res) => {
+    console.log('sending form')
     res.send(form);
   });
 
   app.get('/message', async (req, res) => {
+    console.log('handling message')
     try {
 
       // Get the message from the request
@@ -181,6 +190,8 @@ export const setupServer = async (port: number | undefined = undefined) => {
       console.error(error);
     }
   });
+  console.log("Listening")
+  console.log("Listening on port" + port)
   if(port) return app.listen(port);
   return app.listen();
 };

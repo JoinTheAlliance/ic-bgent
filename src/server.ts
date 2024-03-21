@@ -1,3 +1,3 @@
 import { setupServer } from './setupServer';
 
-setupServer(3000);
+setupServer(fetch, 3000);
