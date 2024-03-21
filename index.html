@@ -430,7 +430,7 @@
         // fetchingDataFromServer
         const response = await fetch(
           // provideDeployedServerSideLink
-          "http://localhost:3000/message?message=" + data.get("prompt"),
+          "/message?message=" + data.get("prompt"),
         );
 
         clearInterval(loadInterval);
