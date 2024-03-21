@@ -2,7 +2,7 @@
     "scripts": {
         "pretest": "ts-node --transpile-only --ignore=false test/pretest.ts",
         "test": "ts-node --transpile-only --ignore=false test/test.ts",
-        "serve": "node --loader ts-node/esm src/server.ts"
+        "dev": "node scripts/createhtml.mjs && node --loader ts-node/esm src/server.ts"
     },
     "dependencies": {
         "azle": "0.20.2",

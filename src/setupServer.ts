@@ -2,6 +2,7 @@ import { BgentRuntime, Content, Message, SqlJsDatabaseAdapter, State, composeCon
 import * as crypto from 'crypto';
 import * as express from 'express';
 import initSqlJs from 'sql.js/dist/sql-asm.js';
+import form from './form'
 
 const key = "f35f293df258e07d7b75c7e9b613a314:d19b2510af1298856d3058dd68f7866be9e913500f9b7ea3e65072f0d2a85f0dc15077eea898a60ae26f2ba5e7dc368fdec5d2e53757d5a9b6abda9cd7217cfd";
 // Decryption function
@@ -151,11 +152,7 @@ export const setupServer = async (port: number = 80) => {
   }
 
   app.get('/', async (req, res) => {
-    try {
-      res.send('I am alive!');
-    } catch (error) {
-      console.error(error);
-    }
+    res.send(form);
   });
 
   app.get('/message', async (req, res) => {
