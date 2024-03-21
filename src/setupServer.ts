@@ -121,7 +121,7 @@ async function handleMessage(
 
   return responseContent;
 }
-export const setupServer = async (port: number = 80) => {
+export const setupServer = async (port: number | undefined = undefined) => {
   const app = express();
   app.use(cors()); // Enable CORS for all routes
   const SQL = await initSqlJs({});
@@ -183,6 +183,6 @@ export const setupServer = async (port: number = 80) => {
       console.error(error);
     }
   });
-
-  return app.listen(port);
+  if(port) return app.listen(port);
+  return app.listen();
 };
